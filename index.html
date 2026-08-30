@@ -136,12 +136,12 @@
     position: relative;
     background: var(--surface);
     border: 1px solid var(--surface-border);
-    border-radius: 14px;
+    border-radius: 20px;
     box-shadow: var(--shadow);
-    padding: 16px 18px;
+    padding: 26px 24px;
     font-family: 'Noto Sans KR', 'Manrope', sans-serif;
-    font-size: 20px;
-    line-height: 1.5;
+    font-size: 58px;
+    line-height: 1.35;
     color: var(--ink);
     overflow: hidden;
     -webkit-user-select: none;
@@ -204,7 +204,7 @@
 
   .status {
     margin: 0;
-    font-size: 14.5px;
+    font-size: 17px;
     font-weight: 500;
     color: var(--ink-soft);
     min-height: 19px;
@@ -212,12 +212,12 @@
 
   .interim {
     margin: 0;
-    font-size: 17px;
-    line-height: 1.4;
+    font-size: 22px;
+    line-height: 1.35;
     color: var(--ink-faint);
     min-height: 16px;
-    max-height: 4.6em;
-    max-width: 90%;
+    max-height: 3.6em;
+    max-width: 92%;
     overflow-y: auto;
     text-align: center;
     white-space: normal;
@@ -227,8 +227,8 @@
 
   .mic {
     position: relative;
-    width: 68px;
-    height: 68px;
+    width: 200px;
+    height: 200px;
     border-radius: 50%;
     border: none;
     background: var(--accent);
@@ -242,7 +242,7 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  .mic svg { width: 26px; height: 26px; position: relative; z-index: 2; }
+  .mic svg { width: 78px; height: 78px; position: relative; z-index: 2; }
 
   .mic-rings { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
 
@@ -286,7 +286,7 @@
 
   .hint {
     margin: 2px 0 0;
-    font-size: 12.5px;
+    font-size: 14px;
     color: var(--ink-faint);
     letter-spacing: 0.01em;
   }
@@ -443,40 +443,30 @@
   } else {
     var recognition = new SpeechRecognitionCtor();
     recognition.lang = 'ko-KR';
-    recognition.continuous = true;
+    recognition.continuous = false;
     recognition.interimResults = true;
 
     var isListening = false;
     var restartTimer = null;
+    var autoOffTimer = null;
     var quickEndCount = 0;
     var lastStartAt = 0;
-    var pendingText = '';
-    var commitTimer = null;
-    var COMMIT_PAUSE_MS = 1300;
+    var AUTO_OFF_MS = 10000;
 
     function setListeningUI(on) {
       micBtn.classList.toggle('listening', on);
       micBtn.setAttribute('aria-label', on ? '음성 입력 중지' : '음성 입력 시작');
-      status.textContent = on ? '듣는 중...' : '눌러서 시작';
+      if (on) status.textContent = '듣는 중...';
       if (!on) interim.textContent = '';
     }
 
-    function renderPending(extra) {
-      var text = pendingText + (extra ? (pendingText ? ' ' : '') + extra : '');
-      interim.textContent = text;
-    }
-
-    function commitPending() {
-      clearTimeout(commitTimer);
-      commitTimer = null;
-      if (pendingText.trim()) addBox(pendingText);
-      pendingText = '';
-      interim.textContent = '';
-    }
-
-    function schedulePendingCommit() {
-      clearTimeout(commitTimer);
-      commitTimer = setTimeout(commitPending, COMMIT_PAUSE_MS);
+    function stopListening(message) {
+      isListening = false;
+      clearTimeout(restartTimer);
+      clearTimeout(autoOffTimer);
+      setListeningUI(false);
+      status.textContent = message || '눌러서 시작';
+      try { recognition.stop(); } catch (e) {}
     }
 
     function startRecognition() {
@@ -499,30 +489,28 @@
 
     recognition.onresult = function (event) {
       var interimText = '';
+      var finalText = '';
       for (var i = event.resultIndex; i < event.results.length; i++) {
         var result = event.results[i];
         if (result.isFinal) {
-          var chunk = result[0].transcript.trim();
-          if (chunk) pendingText = pendingText ? pendingText + ' ' + chunk : chunk;
+          finalText += result[0].transcript;
         } else {
           interimText += result[0].transcript;
         }
       }
-      renderPending(interimText);
-      schedulePendingCommit();
+      if (finalText.trim()) {
+        addBox(finalText);
+        interim.textContent = '';
+      } else {
+        interim.textContent = interimText;
+      }
     };
 
     recognition.onerror = function (event) {
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        isListening = false;
-        commitPending();
-        setListeningUI(false);
-        status.textContent = '마이크 접근이 차단됐어요 (설정에서 확인해주세요)';
+        stopListening('마이크 접근이 차단됐어요 (설정에서 확인해주세요)');
       } else if (event.error === 'audio-capture') {
-        isListening = false;
-        commitPending();
-        setListeningUI(false);
-        status.textContent = '마이크를 찾을 수 없어요';
+        stopListening('마이크를 찾을 수 없어요');
       }
       /* other errors (no-speech, network, aborted) are handled by onend restart */
     };
@@ -532,13 +520,10 @@
       var elapsed = Date.now() - lastStartAt;
       quickEndCount = elapsed < 350 ? quickEndCount + 1 : 0;
       if (quickEndCount > 4) {
-        isListening = false;
-        commitPending();
-        setListeningUI(false);
-        status.textContent = '다시 눌러서 시작해주세요';
+        stopListening('다시 눌러서 시작해주세요');
         return;
       }
-      restartTimer = setTimeout(startRecognition, 200);
+      restartTimer = setTimeout(startRecognition, 150);
     };
 
     micBtn.addEventListener('click', function () {
@@ -552,6 +537,10 @@
           if (!isListening) return;
           setListeningUI(true);
           startRecognition();
+          clearTimeout(autoOffTimer);
+          autoOffTimer = setTimeout(function () {
+            stopListening('시간이 지나 마이크가 꺼졌어요');
+          }, AUTO_OFF_MS);
         }).catch(function (err) {
           isListening = false;
           setListeningUI(false);
@@ -565,10 +554,7 @@
           }
         });
       } else {
-        isListening = false;
-        commitPending();
-        setListeningUI(false);
-        try { recognition.stop(); } catch (e) {}
+        stopListening();
       }
     });
   }
