@@ -1,0 +1,697 @@
+<title>말박스</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,500;1,600&family=Manrope:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --bg: #eceee8;
+    --surface: #ffffff;
+    --surface-border: rgba(24, 32, 28, 0.10);
+    --ink: #1c2622;
+    --ink-soft: #5b6b63;
+    --ink-faint: #8b988f;
+    --accent: #2f6f62;
+    --accent-ink: #ffffff;
+    --accent-active: #d8592e;
+    --accent-active-ink: #ffffff;
+    --ring: rgba(47, 111, 98, 0.28);
+    --ring-active: rgba(216, 89, 46, 0.30);
+    --shadow: 0 1px 2px rgba(20, 26, 23, 0.06), 0 6px 16px -8px rgba(20, 26, 23, 0.18);
+    --tint-teal: #dceee7;
+    --tint-amber: #fbe6d3;
+    --tint-blue: #dbe6f6;
+    --tint-rose: #f8dde6;
+    --tint-violet: #e9e1f7;
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12160f;
+      --surface: #1b211c;
+      --surface-border: rgba(237, 239, 234, 0.10);
+      --ink: #edefea;
+      --ink-soft: #98a599;
+      --ink-faint: #647065;
+      --accent: #63b5a3;
+      --accent-ink: #0d1512;
+      --accent-active: #f0895a;
+      --accent-active-ink: #1c0f08;
+      --ring: rgba(99, 181, 163, 0.22);
+      --ring-active: rgba(240, 137, 90, 0.24);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 20px -8px rgba(0, 0, 0, 0.5);
+      --tint-teal: #1f332e;
+      --tint-amber: #3a2c1b;
+      --tint-blue: #212b3c;
+      --tint-rose: #3a2530;
+      --tint-violet: #2c2440;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #12160f;
+    --surface: #1b211c;
+    --surface-border: rgba(237, 239, 234, 0.10);
+    --ink: #edefea;
+    --ink-soft: #98a599;
+    --ink-faint: #647065;
+    --accent: #63b5a3;
+    --accent-ink: #0d1512;
+    --accent-active: #f0895a;
+    --accent-active-ink: #1c0f08;
+    --ring: rgba(99, 181, 163, 0.22);
+    --ring-active: rgba(240, 137, 90, 0.24);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 20px -8px rgba(0, 0, 0, 0.5);
+    --tint-teal: #1f332e;
+    --tint-amber: #3a2c1b;
+    --tint-blue: #212b3c;
+    --tint-rose: #3a2530;
+    --tint-violet: #2c2440;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Manrope', 'Noto Sans KR', sans-serif;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-width: 480px;
+    margin: 0 auto;
+    background: var(--bg);
+  }
+
+  .topbar {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: max(18px, env(safe-area-inset-top)) 22px 14px;
+    flex-shrink: 0;
+  }
+
+  .wordmark {
+    margin: 0;
+    font-family: 'Fraunces', 'Noto Sans KR', serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 50px;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+  }
+
+  .wordmark em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .count {
+    font-variant-numeric: tabular-nums;
+    font-size: 18px;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+
+  .stage {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 18px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 30px;
+  }
+
+  .empty p {
+    margin: 0;
+    color: var(--ink-faint);
+    font-size: 17px;
+    line-height: 1.6;
+  }
+
+  .box-row {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .box-row.removing {
+    animation: dismiss 0.28s ease forwards;
+    pointer-events: none;
+  }
+
+  .box {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    padding: 26px 24px;
+    font-family: 'Noto Sans KR', 'Manrope', sans-serif;
+    font-size: 58px;
+    line-height: 1.35;
+    color: var(--ink);
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+    transform-origin: center;
+    transition: transform 0.12s ease, background 0.2s ease;
+    cursor: pointer;
+  }
+
+  .box-row .box {
+    animation: appear 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .box-tools {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .tool-btn {
+    width: 92px;
+    height: 92px;
+    border-radius: 50%;
+    border: 1px solid var(--surface-border);
+    background: var(--surface);
+    color: var(--ink-soft);
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Manrope', 'Noto Sans KR', sans-serif;
+    font-weight: 700;
+    font-size: 28px;
+    cursor: pointer;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .tool-btn:active {
+    transform: scale(0.94);
+  }
+
+  .tool-btn:focus-visible,
+  .mic:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .tool-color .swatch {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--surface-border);
+    background: var(--surface);
+  }
+
+  .box::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--accent-active);
+    opacity: 0.16;
+    width: 0%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .box.holding::before {
+    width: 100%;
+    transition: width 0.62s linear;
+  }
+
+  .box.holding {
+    transform: scale(0.98);
+  }
+
+  .box .box-text {
+    position: relative;
+    z-index: 1;
+  }
+
+  @keyframes appear {
+    from { opacity: 0; transform: translateY(8px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @keyframes dismiss {
+    to { opacity: 0; transform: scale(0.9); max-height: 0; margin: 0; padding-top: 0; padding-bottom: 0; }
+  }
+
+  .dock {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px max(18px, env(safe-area-inset-bottom));
+  }
+
+  .status {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    min-height: 19px;
+  }
+
+  .interim {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.35;
+    color: var(--ink-faint);
+    min-height: 16px;
+    max-height: 3.6em;
+    max-width: 92%;
+    overflow-y: auto;
+    text-align: center;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  .mic {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    color: var(--accent-ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mic svg { width: 78px; height: 78px; position: relative; z-index: 2; }
+
+  .mic-rings { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
+
+  .mic.listening {
+    background: var(--accent-active);
+    color: var(--accent-active-ink);
+  }
+
+  .mic.listening .mic-rings::before,
+  .mic.listening .mic-rings::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: var(--ring-active);
+    animation: pulse 1.8s ease-out infinite;
+  }
+
+  .mic.listening .mic-rings::after {
+    animation-delay: 0.6s;
+  }
+
+  .mic:not(.listening) .mic-rings::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 6px var(--ring);
+    opacity: 0.5;
+  }
+
+  @keyframes pulse {
+    from { transform: scale(1); opacity: 0.55; }
+    to { transform: scale(2.1); opacity: 0; }
+  }
+
+  .mic:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .hint {
+    margin: 2px 0 0;
+    font-size: 14px;
+    color: var(--ink-faint);
+    letter-spacing: 0.01em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .box, .box-row.removing { animation: none; }
+    .mic.listening .mic-rings::before, .mic.listening .mic-rings::after { animation: none; opacity: 0.3; }
+  }
+</style>
+
+<div class="app">
+  <header class="topbar">
+    <h1 class="wordmark"><em>말</em>박스</h1>
+    <span class="count" id="count">0개</span>
+  </header>
+
+  <main class="stage" id="stage">
+    <div class="empty" id="empty">
+      <p>마이크를 눌러<br>첫 메모를 남겨보세요</p>
+    </div>
+  </main>
+
+  <footer class="dock">
+    <p class="status" id="status">눌러서 시작</p>
+    <p class="interim" id="interim" aria-live="polite"></p>
+    <button class="mic" id="micBtn" aria-label="음성 입력 시작">
+      <span class="mic-rings" aria-hidden="true"></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+        <path d="M19 10v1a7 7 0 0 1-14 0v-1"></path>
+        <line x1="12" y1="19" x2="12" y2="22"></line>
+      </svg>
+    </button>
+    <p class="hint">꾹 누르면 삭제 · 옆 버튼으로 색·크기 변경</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var stage = document.getElementById('stage');
+  var empty = document.getElementById('empty');
+  var count = document.getElementById('count');
+  var status = document.getElementById('status');
+  var interim = document.getElementById('interim');
+  var micBtn = document.getElementById('micBtn');
+
+  var STORAGE_KEY = 'malbox.boxes.v1';
+  var HOLD_MS = 620;
+  var boxes = [];
+  var nextId = 1;
+
+  var TINTS = ['', 'var(--tint-teal)', 'var(--tint-amber)', 'var(--tint-blue)', 'var(--tint-rose)', 'var(--tint-violet)'];
+  var SIZES = [58, 78, 98];
+
+  function loadBoxes() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      var parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(function (b) { return b && typeof b.text === 'string'; });
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveBoxes() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(boxes.map(function (b) {
+        return { id: b.id, text: b.text, tint: b.tint, size: b.size };
+      })));
+    } catch (e) {
+      /* ignore persistence failures */
+    }
+  }
+
+  function updateCount() {
+    count.textContent = boxes.length + '개';
+    empty.hidden = boxes.length > 0;
+  }
+
+  function attachHoldToDelete(el, id) {
+    var timer = null;
+    var holding = false;
+
+    function startHold(e) {
+      if (holding) return;
+      holding = true;
+      void el.offsetWidth;
+      el.classList.add('holding');
+      timer = setTimeout(function () {
+        if (holding) removeBox(id);
+      }, HOLD_MS);
+    }
+
+    function cancelHold() {
+      if (!holding) return;
+      holding = false;
+      clearTimeout(timer);
+      el.classList.remove('holding');
+    }
+
+    el.addEventListener('pointerdown', startHold);
+    el.addEventListener('pointerup', cancelHold);
+    el.addEventListener('pointercancel', cancelHold);
+    el.addEventListener('pointerleave', cancelHold);
+    el.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  }
+
+  function applyTint(box) {
+    box.el.style.background = TINTS[box.tint] || '';
+    var next = TINTS[(box.tint + 1) % TINTS.length];
+    box.swatch.style.background = next || 'var(--surface)';
+  }
+
+  function applySize(box) {
+    box.textEl.style.fontSize = SIZES[box.size] + 'px';
+  }
+
+  function attachBoxTools(box) {
+    function stop(e) { e.stopPropagation(); }
+    [box.colorBtn, box.sizeBtn].forEach(function (btn) {
+      btn.addEventListener('pointerdown', stop);
+      btn.addEventListener('pointerup', stop);
+      btn.addEventListener('pointercancel', stop);
+    });
+
+    box.colorBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      box.tint = (box.tint + 1) % TINTS.length;
+      applyTint(box);
+      saveBoxes();
+    });
+
+    box.sizeBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      box.size = (box.size + 1) % SIZES.length;
+      applySize(box);
+      saveBoxes();
+    });
+  }
+
+  function addBox(text, opts) {
+    text = (text || '').trim();
+    if (!text) return;
+    opts = opts || {};
+
+    var id = nextId++;
+    var row = document.createElement('div');
+    row.className = 'box-row';
+
+    var el = document.createElement('div');
+    el.className = 'box';
+    el.dataset.id = String(id);
+    var span = document.createElement('span');
+    span.className = 'box-text';
+    span.textContent = text;
+    el.appendChild(span);
+    if (opts.noAnimate) el.style.animation = 'none';
+
+    var tools = document.createElement('div');
+    tools.className = 'box-tools';
+    tools.innerHTML =
+      '<button type="button" class="tool-btn tool-color" aria-label="박스 색 바꾸기"><span class="swatch"></span></button>' +
+      '<button type="button" class="tool-btn tool-size" aria-label="글자 크기 바꾸기">A+</button>';
+
+    row.appendChild(el);
+    row.appendChild(tools);
+    stage.appendChild(row);
+
+    var box = {
+      id: id,
+      text: text,
+      row: row,
+      el: el,
+      textEl: span,
+      colorBtn: tools.querySelector('.tool-color'),
+      sizeBtn: tools.querySelector('.tool-size'),
+      swatch: tools.querySelector('.swatch'),
+      tint: opts.tint || 0,
+      size: opts.size || 0
+    };
+
+    applyTint(box);
+    applySize(box);
+    attachBoxTools(box);
+    attachHoldToDelete(el, id);
+    boxes.push(box);
+    updateCount();
+    if (opts.persist !== false) saveBoxes();
+    stage.scrollTop = stage.scrollHeight;
+  }
+
+  function removeBox(id) {
+    var idx = boxes.findIndex(function (b) { return b.id === id; });
+    if (idx === -1) return;
+    var entry = boxes[idx];
+    boxes.splice(idx, 1);
+    saveBoxes();
+    updateCount();
+    if (navigator.vibrate) { try { navigator.vibrate(15); } catch (e) {} }
+    entry.row.classList.add('removing');
+    entry.row.addEventListener('animationend', function () {
+      if (entry.row.parentNode) entry.row.parentNode.removeChild(entry.row);
+    }, { once: true });
+  }
+
+  loadBoxes().forEach(function (b) {
+    nextId = Math.max(nextId, b.id + 1);
+    addBox(b.text, { noAnimate: true, persist: false, tint: b.tint || 0, size: b.size || 0 });
+  });
+
+  var SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognitionCtor) {
+    status.textContent = '이 브라우저는 음성 인식을 지원하지 않아요';
+    micBtn.disabled = true;
+  } else {
+    var recognition = new SpeechRecognitionCtor();
+    recognition.lang = 'ko-KR';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+
+    var isListening = false;
+    var restartTimer = null;
+    var autoOffTimer = null;
+    var quickEndCount = 0;
+    var lastStartAt = 0;
+    var AUTO_OFF_MS = 10000;
+
+    function setListeningUI(on) {
+      micBtn.classList.toggle('listening', on);
+      micBtn.setAttribute('aria-label', on ? '음성 입력 중지' : '음성 입력 시작');
+      if (on) status.textContent = '듣는 중...';
+      if (!on) interim.textContent = '';
+    }
+
+    function stopListening(message) {
+      isListening = false;
+      clearTimeout(restartTimer);
+      clearTimeout(autoOffTimer);
+      setListeningUI(false);
+      status.textContent = message || '눌러서 시작';
+      try { recognition.stop(); } catch (e) {}
+    }
+
+    function startRecognition() {
+      try {
+        lastStartAt = Date.now();
+        recognition.start();
+      } catch (e) {
+        /* already started; ignore */
+      }
+    }
+
+    function ensureMicAccess() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        return Promise.resolve();
+      }
+      return navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+        stream.getTracks().forEach(function (t) { t.stop(); });
+      });
+    }
+
+    recognition.onresult = function (event) {
+      var interimText = '';
+      var finalText = '';
+      for (var i = event.resultIndex; i < event.results.length; i++) {
+        var result = event.results[i];
+        if (result.isFinal) {
+          finalText += result[0].transcript;
+        } else {
+          interimText += result[0].transcript;
+        }
+      }
+      if (finalText.trim()) {
+        addBox(finalText);
+        interim.textContent = '';
+      } else {
+        interim.textContent = interimText;
+      }
+    };
+
+    recognition.onerror = function (event) {
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        stopListening('마이크 접근이 차단됐어요 (설정에서 확인해주세요)');
+      } else if (event.error === 'audio-capture') {
+        stopListening('마이크를 찾을 수 없어요');
+      }
+      /* other errors (no-speech, network, aborted) are handled by onend restart */
+    };
+
+    recognition.onend = function () {
+      if (!isListening) return;
+      var elapsed = Date.now() - lastStartAt;
+      quickEndCount = elapsed < 350 ? quickEndCount + 1 : 0;
+      if (quickEndCount > 4) {
+        stopListening('다시 눌러서 시작해주세요');
+        return;
+      }
+      restartTimer = setTimeout(startRecognition, 150);
+    };
+
+    micBtn.addEventListener('click', function () {
+      clearTimeout(restartTimer);
+      if (!isListening) {
+        isListening = true;
+        quickEndCount = 0;
+        micBtn.classList.add('listening');
+        status.textContent = '마이크 확인 중...';
+        ensureMicAccess().then(function () {
+          if (!isListening) return;
+          setListeningUI(true);
+          startRecognition();
+          clearTimeout(autoOffTimer);
+          autoOffTimer = setTimeout(function () {
+            stopListening('시간이 지나 마이크가 꺼졌어요');
+          }, AUTO_OFF_MS);
+        }).catch(function (err) {
+          isListening = false;
+          setListeningUI(false);
+          var reason = err && err.name ? err.name : '';
+          if (reason === 'NotFoundError') {
+            status.textContent = '마이크를 찾을 수 없어요';
+          } else if (reason === 'SecurityError') {
+            status.textContent = '이 화면에서는 마이크를 쓸 수 없어요 (새 탭에서 열어보세요)';
+          } else {
+            status.textContent = '마이크 접근이 차단됐어요 (설정에서 확인해주세요)';
+          }
+        });
+      } else {
+        stopListening();
+      }
+    });
+  }
+})();
+</script>
