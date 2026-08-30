@@ -93,10 +93,18 @@
 
   .topbar {
     display: flex;
-    align-items: baseline;
+    align-items: flex-end;
     justify-content: space-between;
     padding: max(18px, env(safe-area-inset-top)) 22px 14px;
     flex-shrink: 0;
+    gap: 12px;
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
   }
 
   .wordmark {
@@ -104,7 +112,8 @@
     font-family: 'Fraunces', 'Noto Sans KR', serif;
     font-style: italic;
     font-weight: 600;
-    font-size: 22px;
+    font-size: 68px;
+    line-height: 1;
     letter-spacing: 0.01em;
     color: var(--ink);
   }
@@ -114,9 +123,19 @@
     color: var(--accent);
   }
 
+  .tagline {
+    margin: 0;
+    font-family: 'Manrope', 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
   .count {
     font-variant-numeric: tabular-nums;
-    font-size: 14px;
+    font-size: 18px;
     color: var(--ink-faint);
     font-weight: 500;
   }
@@ -189,13 +208,13 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 10px;
+    gap: 16px;
     flex-shrink: 0;
   }
 
   .tool-btn {
-    width: 52px;
-    height: 52px;
+    width: 92px;
+    height: 92px;
     border-radius: 50%;
     border: 1px solid var(--surface-border);
     background: var(--surface);
@@ -206,7 +225,7 @@
     justify-content: center;
     font-family: 'Manrope', 'Noto Sans KR', sans-serif;
     font-weight: 700;
-    font-size: 17px;
+    font-size: 28px;
     cursor: pointer;
     padding: 0;
     -webkit-tap-highlight-color: transparent;
@@ -223,8 +242,8 @@
   }
 
   .tool-color .swatch {
-    width: 26px;
-    height: 26px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     border: 1px solid var(--surface-border);
     background: var(--surface);
@@ -370,7 +389,10 @@
 
 <div class="app">
   <header class="topbar">
-    <h1 class="wordmark"><em>말</em>박스</h1>
+    <div class="brand">
+      <h1 class="wordmark"><em>말</em>박스</h1>
+      <p class="tagline">Horse box</p>
+    </div>
     <span class="count" id="count">0개</span>
   </header>
 
