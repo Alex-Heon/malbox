@@ -192,6 +192,14 @@
   .stage {
     position: relative;
     flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stage-scroll {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: 4px 18px 18px;
     display: flex;
@@ -201,10 +209,11 @@
   }
 
   .truck-lane {
-    position: sticky;
+    position: absolute;
     top: 2px;
+    left: 0;
+    right: 0;
     height: 44px;
-    flex-shrink: 0;
     pointer-events: none;
     z-index: 5;
     overflow: visible;
@@ -580,8 +589,10 @@
         <circle cx="64" cy="34" r="2.5" fill="var(--surface)"></circle>
       </svg>
     </div>
-    <div class="empty" id="empty">
-      <p>마이크를 눌러<br>첫 메모를 남겨보세요</p>
+    <div class="stage-scroll" id="stageScroll">
+      <div class="empty" id="empty">
+        <p>마이크를 눌러<br>첫 메모를 남겨보세요</p>
+      </div>
     </div>
   </main>
 
@@ -603,6 +614,7 @@
 <script>
 (function () {
   var stage = document.getElementById('stage');
+  var stageScroll = document.getElementById('stageScroll');
   var empty = document.getElementById('empty');
   var count = document.getElementById('count');
   var status = document.getElementById('status');
@@ -744,7 +756,7 @@
 
     row.appendChild(el);
     row.appendChild(tools);
-    stage.appendChild(row);
+    stageScroll.appendChild(row);
 
     var box = {
       id: id,
@@ -766,7 +778,7 @@
     boxes.push(box);
     updateCount();
     if (opts.persist !== false) saveBoxes();
-    stage.scrollTop = stage.scrollHeight;
+    stageScroll.scrollTop = stageScroll.scrollHeight;
   }
 
   var REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
