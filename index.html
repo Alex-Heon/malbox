@@ -22,6 +22,8 @@
     --tint-blue: #dbe6f6;
     --tint-rose: #f8dde6;
     --tint-violet: #e9e1f7;
+    --tape: #e0c294;
+    --tape-edge: rgba(90, 62, 27, 0.35);
     color-scheme: light;
   }
 
@@ -45,6 +47,8 @@
       --tint-blue: #212b3c;
       --tint-rose: #3a2530;
       --tint-violet: #2c2440;
+      --tape: #c9a668;
+      --tape-edge: rgba(40, 26, 8, 0.45);
       color-scheme: dark;
     }
   }
@@ -68,6 +72,8 @@
     --tint-blue: #212b3c;
     --tint-rose: #3a2530;
     --tint-violet: #2c2440;
+    --tape: #c9a668;
+    --tape-edge: rgba(40, 26, 8, 0.45);
     color-scheme: dark;
   }
 
@@ -133,11 +139,54 @@
     color: var(--ink-faint);
   }
 
+  .topbar-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
   .count {
     font-variant-numeric: tabular-nums;
     font-size: 18px;
     color: var(--ink-faint);
     font-weight: 500;
+  }
+
+  .backup-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .icon-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid var(--surface-border);
+    background: var(--surface);
+    color: var(--ink-soft);
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .icon-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .icon-btn:active {
+    transform: scale(0.92);
+  }
+
+  .icon-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 
   .stage {
@@ -274,13 +323,59 @@
     z-index: 1;
   }
 
+  .box.sealing {
+    transform: scale(0.98);
+  }
+
+  .box.sealing .box-text {
+    transition: opacity 0.25s ease 0.2s;
+    opacity: 0.35;
+  }
+
+  .tape {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 145%;
+    height: 15%;
+    min-height: 20px;
+    background:
+      linear-gradient(rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 35%, rgba(0, 0, 0, 0.05) 100%),
+      var(--tape);
+    border-top: 1px solid rgba(255, 255, 255, 0.35);
+    border-bottom: 1px solid var(--tape-edge);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 3;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -50%) rotate(var(--rot)) scaleX(0);
+    transform-origin: center;
+  }
+
+  .tape-1 { --rot: -38deg; }
+  .tape-2 { --rot: 38deg; }
+
+  .box.sealing .tape-1 {
+    animation: tape-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .box.sealing .tape-2 {
+    animation: tape-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.16s forwards;
+  }
+
+  @keyframes tape-in {
+    0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--rot)) scaleX(0); }
+    55% { opacity: 1; }
+    100% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--rot)) scaleX(1); }
+  }
+
   @keyframes appear {
     from { opacity: 0; transform: translateY(8px) scale(0.97); }
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
   @keyframes dismiss {
-    to { opacity: 0; transform: scale(0.9); max-height: 0; margin: 0; padding-top: 0; padding-bottom: 0; }
+    to { opacity: 0; transform: scale(0.82); max-height: 0; margin: 0; padding-top: 0; padding-bottom: 0; }
   }
 
   .dock {
@@ -383,6 +478,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .box, .box-row.removing { animation: none; }
+    .box.sealing .tape-1, .box.sealing .tape-2 { animation: none; }
     .mic.listening .mic-rings::before, .mic.listening .mic-rings::after { animation: none; opacity: 0.3; }
   }
 </style>
@@ -393,7 +489,25 @@
       <h1 class="wordmark"><em>말</em>박스</h1>
       <p class="tagline">Horse box</p>
     </div>
-    <span class="count" id="count">0개</span>
+    <div class="topbar-side">
+      <span class="count" id="count">0개</span>
+      <div class="backup-actions">
+        <button type="button" class="icon-btn" id="exportBtn" aria-label="메모를 코드로 복사하기">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v12"></path>
+            <path d="M7 10l5 5 5-5"></path>
+            <path d="M5 21h14"></path>
+          </svg>
+        </button>
+        <button type="button" class="icon-btn" id="importBtn" aria-label="코드로 메모 불러오기">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 21V9"></path>
+            <path d="M7 14l5-5 5 5"></path>
+            <path d="M5 3h14"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
   </header>
 
   <main class="stage" id="stage">
@@ -425,6 +539,8 @@
   var status = document.getElementById('status');
   var interim = document.getElementById('interim');
   var micBtn = document.getElementById('micBtn');
+  var exportBtn = document.getElementById('exportBtn');
+  var importBtn = document.getElementById('importBtn');
 
   var STORAGE_KEY = 'malbox.boxes.v1';
   var HOLD_MS = 620;
@@ -538,6 +654,14 @@
     span.className = 'box-text';
     span.textContent = text;
     el.appendChild(span);
+    var tape1 = document.createElement('span');
+    tape1.className = 'tape tape-1';
+    tape1.setAttribute('aria-hidden', 'true');
+    var tape2 = document.createElement('span');
+    tape2.className = 'tape tape-2';
+    tape2.setAttribute('aria-hidden', 'true');
+    el.appendChild(tape1);
+    el.appendChild(tape2);
     if (opts.noAnimate) el.style.animation = 'none';
 
     var tools = document.createElement('div');
@@ -573,6 +697,9 @@
     stage.scrollTop = stage.scrollHeight;
   }
 
+  var REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var SEAL_MS = REDUCED_MOTION ? 0 : 480;
+
   function removeBox(id) {
     var idx = boxes.findIndex(function (b) { return b.id === id; });
     if (idx === -1) return;
@@ -580,12 +707,110 @@
     boxes.splice(idx, 1);
     saveBoxes();
     updateCount();
-    if (navigator.vibrate) { try { navigator.vibrate(15); } catch (e) {} }
-    entry.row.classList.add('removing');
-    entry.row.addEventListener('animationend', function () {
-      if (entry.row.parentNode) entry.row.parentNode.removeChild(entry.row);
-    }, { once: true });
+    if (navigator.vibrate) { try { navigator.vibrate([12, 40, 12]); } catch (e) {} }
+
+    entry.el.classList.remove('holding');
+    entry.el.classList.add('sealing');
+
+    setTimeout(function () {
+      entry.row.classList.add('removing');
+      entry.row.addEventListener('animationend', function (e) {
+        if (e.target !== entry.row) return;
+        if (entry.row.parentNode) entry.row.parentNode.removeChild(entry.row);
+      });
+    }, SEAL_MS);
   }
+
+  var CODE_PREFIX = 'MALBOX1:';
+  var statusResetTimer = null;
+
+  function flashStatus(message) {
+    clearTimeout(statusResetTimer);
+    status.textContent = message;
+    statusResetTimer = setTimeout(function () {
+      status.textContent = '눌러서 시작';
+    }, 1800);
+  }
+
+  function encodeUnicode(str) {
+    var bytes = new TextEncoder().encode(str);
+    var binary = '';
+    for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary);
+  }
+
+  function decodeUnicode(b64) {
+    var binary = atob(b64);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+
+  function buildExportCode() {
+    var payload = boxes.map(function (b) {
+      return { t: b.text, c: b.tint, s: b.size };
+    });
+    return CODE_PREFIX + encodeUnicode(JSON.stringify(payload));
+  }
+
+  function exportBoxes() {
+    if (!boxes.length) {
+      flashStatus('내보낼 메모가 없어요');
+      return;
+    }
+    var code = buildExportCode();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(function () {
+        flashStatus('코드가 복사됐어요');
+      }).catch(function () {
+        window.prompt('아래 코드를 복사해 보관하세요', code);
+      });
+    } else {
+      window.prompt('아래 코드를 복사해 보관하세요', code);
+    }
+  }
+
+  function importBoxes() {
+    var input = window.prompt('복사해둔 코드를 여기에 붙여넣으세요');
+    if (input === null) return;
+    input = input.trim();
+    if (!input) return;
+
+    if (input.indexOf(CODE_PREFIX) !== 0) {
+      window.alert('코드를 알아볼 수 없어요. 복사한 코드가 맞는지 확인해주세요.');
+      return;
+    }
+
+    var parsed;
+    try {
+      parsed = JSON.parse(decodeUnicode(input.slice(CODE_PREFIX.length)));
+      if (!Array.isArray(parsed)) throw new Error('invalid');
+    } catch (e) {
+      window.alert('코드를 읽을 수 없어요. 복사한 코드가 맞는지 확인해주세요.');
+      return;
+    }
+
+    if (boxes.length && !window.confirm('지금 있는 메모 ' + boxes.length + '개를 지우고 코드 내용으로 바꿀까요?')) {
+      return;
+    }
+
+    boxes.slice().forEach(function (b) {
+      if (b.row.parentNode) b.row.parentNode.removeChild(b.row);
+    });
+    boxes = [];
+
+    parsed.forEach(function (item) {
+      if (item && typeof item.t === 'string' && item.t.trim()) {
+        addBox(item.t, { noAnimate: true, persist: false, tint: item.c || 0, size: item.s || 0 });
+      }
+    });
+    updateCount();
+    saveBoxes();
+    flashStatus('메모를 불러왔어요');
+  }
+
+  exportBtn.addEventListener('click', exportBoxes);
+  importBtn.addEventListener('click', importBoxes);
 
   loadBoxes().forEach(function (b) {
     nextId = Math.max(nextId, b.id + 1);
