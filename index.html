@@ -347,6 +347,35 @@
     background: var(--surface);
   }
 
+  .tool-check {
+    display: none;
+  }
+
+  .tool-check .check-icon {
+    width: 38px;
+    height: 38px;
+    opacity: 0.25;
+  }
+
+  .box-row.selecting .tool-color,
+  .box-row.selecting .tool-size {
+    display: none;
+  }
+
+  .box-row.selecting .tool-check {
+    display: flex;
+  }
+
+  .box.selected {
+    outline: 3px solid var(--accent);
+    outline-offset: -3px;
+  }
+
+  .box.selected + .box-tools .tool-check .check-icon {
+    opacity: 1;
+    color: var(--accent);
+  }
+
   .box::before {
     content: "";
     position: absolute;
@@ -443,11 +472,67 @@
 
   .dock {
     flex-shrink: 0;
+    padding: 10px 20px max(18px, env(safe-area-inset-bottom));
+  }
+
+  .dock-normal {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    padding: 10px 20px max(18px, env(safe-area-inset-bottom));
+  }
+
+  .dock-normal[hidden] {
+    display: none;
+  }
+
+  .dock-select {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .dock-select[hidden] {
+    display: none;
+  }
+
+  .select-summary {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .select-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .pill-btn {
+    border: 1px solid var(--surface-border);
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 14px 18px;
+    font-family: 'Manrope', 'Noto Sans KR', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .pill-btn:active {
+    transform: scale(0.96);
+  }
+
+  .pill-btn-accent {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: transparent;
   }
 
   .status {
@@ -539,6 +624,58 @@
     letter-spacing: 0.01em;
   }
 
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 14, 11, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 20;
+  }
+
+  .modal-backdrop[hidden] {
+    display: none;
+  }
+
+  .modal-card {
+    background: var(--surface);
+    border-radius: 22px;
+    padding: 26px 22px;
+    max-width: 340px;
+    width: 100%;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .modal-title {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .modal-desc {
+    margin: 0 0 8px;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+  }
+
+  .modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .modal-actions .pill-btn {
+    width: 100%;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .box, .box-row.removing, .box.drop-in { animation: none; }
     .box.sealing .tape-1, .box.sealing .tape-2 { animation: none; }
@@ -597,18 +734,40 @@
   </main>
 
   <footer class="dock">
-    <p class="status" id="status">눌러서 시작</p>
-    <p class="interim" id="interim" aria-live="polite"></p>
-    <button class="mic" id="micBtn" aria-label="음성 입력 시작">
-      <span class="mic-rings" aria-hidden="true"></span>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
-        <path d="M19 10v1a7 7 0 0 1-14 0v-1"></path>
-        <line x1="12" y1="19" x2="12" y2="22"></line>
-      </svg>
-    </button>
-    <p class="hint">꾹 누르면 삭제 · 옆 버튼으로 색·크기 변경</p>
+    <div class="dock-normal" id="dockNormal">
+      <p class="status" id="status">눌러서 시작</p>
+      <p class="interim" id="interim" aria-live="polite"></p>
+      <button class="mic" id="micBtn" aria-label="음성 입력 시작">
+        <span class="mic-rings" aria-hidden="true"></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+          <path d="M19 10v1a7 7 0 0 1-14 0v-1"></path>
+          <line x1="12" y1="19" x2="12" y2="22"></line>
+        </svg>
+      </button>
+      <p class="hint">꾹 누르면 삭제 · 옆 버튼으로 색·크기 변경</p>
+    </div>
+    <div class="dock-select" id="dockSelect" hidden>
+      <p class="select-summary" id="selectSummary">0개 선택됨</p>
+      <div class="select-actions">
+        <button type="button" class="pill-btn" id="selectCancelBtn">취소</button>
+        <button type="button" class="pill-btn" id="selectAllBtn">전체 해제</button>
+        <button type="button" class="pill-btn pill-btn-accent" id="selectConfirmBtn">코드 만들기</button>
+      </div>
+    </div>
   </footer>
+
+  <div class="modal-backdrop" id="importChoice" role="dialog" aria-modal="true" aria-labelledby="importChoiceTitle" hidden>
+    <div class="modal-card">
+      <p class="modal-title" id="importChoiceTitle">코드로 메모를 불러올까요?</p>
+      <p class="modal-desc">지금 있는 메모 <span id="importChoiceCount">0</span>개는 그대로 두고<br>새 메모를 더할 수도 있어요.</p>
+      <div class="modal-actions">
+        <button type="button" class="pill-btn pill-btn-accent" id="importAddBtn">추가하기</button>
+        <button type="button" class="pill-btn" id="importReplaceBtn">교체하기 (기존 메모 삭제)</button>
+        <button type="button" class="pill-btn" id="importCancelBtn">취소</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -624,11 +783,24 @@
   var importBtn = document.getElementById('importBtn');
   var truckLane = document.getElementById('truckLane');
   var truckEl = truckLane ? truckLane.querySelector('.truck') : null;
+  var dockNormal = document.getElementById('dockNormal');
+  var dockSelect = document.getElementById('dockSelect');
+  var selectSummary = document.getElementById('selectSummary');
+  var selectCancelBtn = document.getElementById('selectCancelBtn');
+  var selectAllBtn = document.getElementById('selectAllBtn');
+  var selectConfirmBtn = document.getElementById('selectConfirmBtn');
+  var importChoice = document.getElementById('importChoice');
+  var importChoiceCount = document.getElementById('importChoiceCount');
+  var importAddBtn = document.getElementById('importAddBtn');
+  var importReplaceBtn = document.getElementById('importReplaceBtn');
+  var importCancelBtn = document.getElementById('importCancelBtn');
 
   var STORAGE_KEY = 'malbox.boxes.v1';
   var HOLD_MS = 620;
   var boxes = [];
   var nextId = 1;
+  var selectionMode = false;
+  var selectedIds = new Set();
 
   var TINTS = ['', 'var(--tint-teal)', 'var(--tint-amber)', 'var(--tint-blue)', 'var(--tint-rose)', 'var(--tint-violet)'];
   var SIZES = [58, 78, 98];
@@ -657,6 +829,9 @@
 
   function updateCount() {
     count.textContent = boxes.length + '개';
+  }
+
+  function syncEmptyState() {
     empty.hidden = boxes.length > 0;
   }
 
@@ -665,7 +840,7 @@
     var holding = false;
 
     function startHold(e) {
-      if (holding) return;
+      if (holding || selectionMode) return;
       holding = true;
       void el.offsetWidth;
       el.classList.add('holding');
@@ -700,7 +875,7 @@
 
   function attachBoxTools(box) {
     function stop(e) { e.stopPropagation(); }
-    [box.colorBtn, box.sizeBtn].forEach(function (btn) {
+    [box.colorBtn, box.sizeBtn, box.checkBtn].forEach(function (btn) {
       btn.addEventListener('pointerdown', stop);
       btn.addEventListener('pointerup', stop);
       btn.addEventListener('pointercancel', stop);
@@ -719,6 +894,54 @@
       applySize(box);
       saveBoxes();
     });
+
+    box.checkBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      toggleSelect(box);
+    });
+  }
+
+  function toggleSelect(box) {
+    if (selectedIds.has(box.id)) {
+      selectedIds.delete(box.id);
+      box.el.classList.remove('selected');
+    } else {
+      selectedIds.add(box.id);
+      box.el.classList.add('selected');
+    }
+    updateSelectionSummary();
+  }
+
+  function updateSelectionSummary() {
+    selectSummary.textContent = selectedIds.size + '개 선택됨';
+    selectAllBtn.textContent = (selectedIds.size >= boxes.length) ? '전체 해제' : '전체 선택';
+  }
+
+  function enterSelectionMode() {
+    if (!boxes.length) {
+      flashStatus('내보낼 메모가 없어요');
+      return;
+    }
+    selectionMode = true;
+    selectedIds = new Set(boxes.map(function (b) { return b.id; }));
+    boxes.forEach(function (b) {
+      b.row.classList.add('selecting');
+      b.el.classList.add('selected');
+    });
+    updateSelectionSummary();
+    dockNormal.hidden = true;
+    dockSelect.hidden = false;
+  }
+
+  function exitSelectionMode() {
+    selectionMode = false;
+    selectedIds.clear();
+    boxes.forEach(function (b) {
+      b.row.classList.remove('selecting');
+      b.el.classList.remove('selected');
+    });
+    dockSelect.hidden = true;
+    dockNormal.hidden = false;
   }
 
   function addBox(text, opts) {
@@ -752,7 +975,8 @@
     tools.className = 'box-tools';
     tools.innerHTML =
       '<button type="button" class="tool-btn tool-color" aria-label="박스 색 바꾸기"><span class="swatch"></span></button>' +
-      '<button type="button" class="tool-btn tool-size" aria-label="글자 크기 바꾸기">A+</button>';
+      '<button type="button" class="tool-btn tool-size" aria-label="글자 크기 바꾸기">A+</button>' +
+      '<button type="button" class="tool-btn tool-check" aria-label="선택하기"><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5 11-11"></path></svg></button>';
 
     row.appendChild(el);
     row.appendChild(tools);
@@ -766,6 +990,7 @@
       textEl: span,
       colorBtn: tools.querySelector('.tool-color'),
       sizeBtn: tools.querySelector('.tool-size'),
+      checkBtn: tools.querySelector('.tool-check'),
       swatch: tools.querySelector('.swatch'),
       tint: opts.tint || 0,
       size: opts.size || 0
@@ -775,8 +1000,20 @@
     applySize(box);
     attachBoxTools(box);
     attachHoldToDelete(el, id);
+    el.addEventListener('click', function (e) {
+      if (!selectionMode) return;
+      e.stopPropagation();
+      toggleSelect(box);
+    });
     boxes.push(box);
+    if (selectionMode) {
+      selectedIds.add(box.id);
+      row.classList.add('selecting');
+      el.classList.add('selected');
+      updateSelectionSummary();
+    }
     updateCount();
+    syncEmptyState();
     if (opts.persist !== false) saveBoxes();
     stageScroll.scrollTop = stageScroll.scrollHeight;
   }
@@ -789,6 +1026,7 @@
     if (idx === -1) return;
     var entry = boxes[idx];
     boxes.splice(idx, 1);
+    selectedIds.delete(id);
     saveBoxes();
     updateCount();
     if (navigator.vibrate) { try { navigator.vibrate([12, 40, 12]); } catch (e) {} }
@@ -801,6 +1039,7 @@
       entry.row.addEventListener('animationend', function (e) {
         if (e.target !== entry.row) return;
         if (entry.row.parentNode) entry.row.parentNode.removeChild(entry.row);
+        syncEmptyState();
       });
     }, SEAL_MS);
   }
@@ -846,19 +1085,14 @@
     return new TextDecoder().decode(bytes);
   }
 
-  function buildExportCode() {
-    var payload = boxes.map(function (b) {
+  function buildExportCode(list) {
+    var payload = (list || boxes).map(function (b) {
       return { t: b.text, c: b.tint, s: b.size };
     });
     return CODE_PREFIX + encodeUnicode(JSON.stringify(payload));
   }
 
-  function exportBoxes() {
-    if (!boxes.length) {
-      flashStatus('내보낼 메모가 없어요');
-      return;
-    }
-    var code = buildExportCode();
+  function copyCode(code) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(code).then(function () {
         flashStatus('코드가 복사됐어요');
@@ -870,7 +1104,32 @@
     }
   }
 
+  selectCancelBtn.addEventListener('click', exitSelectionMode);
+
+  selectAllBtn.addEventListener('click', function () {
+    if (selectedIds.size >= boxes.length) {
+      selectedIds.clear();
+      boxes.forEach(function (b) { b.el.classList.remove('selected'); });
+    } else {
+      selectedIds = new Set(boxes.map(function (b) { return b.id; }));
+      boxes.forEach(function (b) { b.el.classList.add('selected'); });
+    }
+    updateSelectionSummary();
+  });
+
+  selectConfirmBtn.addEventListener('click', function () {
+    if (!selectedIds.size) {
+      flashStatus('선택된 메모가 없어요');
+      return;
+    }
+    var chosen = boxes.filter(function (b) { return selectedIds.has(b.id); });
+    var code = buildExportCode(chosen);
+    exitSelectionMode();
+    copyCode(code);
+  });
+
   function importBoxes() {
+    if (selectionMode) exitSelectionMode();
     var input = window.prompt('복사해둔 코드를 여기에 붙여넣으세요');
     if (input === null) return;
     input = input.trim();
@@ -890,28 +1149,61 @@
       return;
     }
 
-    if (boxes.length && !window.confirm('지금 있는 메모 ' + boxes.length + '개를 지우고 코드 내용으로 바꿀까요?')) {
-      return;
-    }
-
-    boxes.slice().forEach(function (b) {
-      if (b.row.parentNode) b.row.parentNode.removeChild(b.row);
-    });
-    boxes = [];
-
     var items = parsed.filter(function (item) {
       return item && typeof item.t === 'string' && item.t.trim();
     });
 
-    function finishImport() {
-      updateCount();
-      saveBoxes();
-      flashStatus('메모를 불러왔어요');
+    if (!items.length) {
+      window.alert('코드 안에 메모가 없어요.');
+      return;
     }
 
-    if (!items.length) {
-      finishImport();
-      return;
+    if (boxes.length) {
+      openImportChoice(items);
+    } else {
+      runImport(items, false);
+    }
+  }
+
+  function openImportChoice(items) {
+    importChoiceCount.textContent = boxes.length;
+    importChoice.hidden = false;
+
+    function cleanup() {
+      importChoice.hidden = true;
+      importAddBtn.removeEventListener('click', onAdd);
+      importReplaceBtn.removeEventListener('click', onReplace);
+      importCancelBtn.removeEventListener('click', onCancel);
+      importChoice.removeEventListener('click', onBackdropClick);
+      document.removeEventListener('keydown', onKeydown);
+    }
+    function onAdd() { cleanup(); runImport(items, false); }
+    function onReplace() { cleanup(); runImport(items, true); }
+    function onCancel() { cleanup(); }
+    function onBackdropClick(e) { if (e.target === importChoice) cleanup(); }
+    function onKeydown(e) { if (e.key === 'Escape') cleanup(); }
+
+    importAddBtn.addEventListener('click', onAdd);
+    importReplaceBtn.addEventListener('click', onReplace);
+    importCancelBtn.addEventListener('click', onCancel);
+    importChoice.addEventListener('click', onBackdropClick);
+    document.addEventListener('keydown', onKeydown);
+  }
+
+  function runImport(items, replace) {
+    if (replace) {
+      boxes.slice().forEach(function (b) {
+        if (b.row.parentNode) b.row.parentNode.removeChild(b.row);
+      });
+      boxes = [];
+      selectedIds.clear();
+    }
+
+    function finishImport() {
+      updateCount();
+      syncEmptyState();
+      saveBoxes();
+      flashStatus(replace ? '메모를 바꿨어요' : '메모를 더했어요');
     }
 
     playTruckDelivery(items.length);
@@ -926,7 +1218,7 @@
     });
   }
 
-  exportBtn.addEventListener('click', exportBoxes);
+  exportBtn.addEventListener('click', enterSelectionMode);
   importBtn.addEventListener('click', importBoxes);
 
   loadBoxes().forEach(function (b) {
