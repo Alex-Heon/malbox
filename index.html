@@ -99,14 +99,41 @@
 
   .topbar {
     display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
+    flex-direction: column;
     padding: max(18px, env(safe-area-inset-top)) 22px 14px;
     flex-shrink: 0;
-    gap: 12px;
+    gap: 10px;
+  }
+
+  .topbar-row-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
   }
 
   .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .logo-mark {
+    flex-shrink: 0;
+    width: 58px;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-mark svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .brand-text {
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -118,7 +145,7 @@
     font-family: 'Fraunces', 'Noto Sans KR', serif;
     font-style: italic;
     font-weight: 600;
-    font-size: 68px;
+    font-size: 72px;
     line-height: 1;
     letter-spacing: 0.01em;
     color: var(--ink);
@@ -132,20 +159,13 @@
   .tagline {
     margin: 0;
     font-family: 'Manrope', 'Noto Sans KR', sans-serif;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--ink-faint);
   }
 
-  .topbar-side {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 8px;
-    flex-shrink: 0;
-  }
 
   .count {
     font-variant-numeric: tabular-nums;
@@ -156,12 +176,12 @@
 
   .backup-actions {
     display: flex;
-    gap: 8px;
+    gap: 10px;
   }
 
   .icon-btn {
-    width: 42px;
-    height: 42px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     border: 1px solid var(--surface-border);
     background: var(--surface);
@@ -176,8 +196,8 @@
   }
 
   .icon-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 27px;
+    height: 27px;
   }
 
   .icon-btn:active {
@@ -687,10 +707,31 @@
 <div class="app">
   <header class="topbar">
     <div class="brand">
-      <h1 class="wordmark"><em>말</em>박스</h1>
-      <p class="tagline">Horse box</p>
+      <div class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 64 64">
+          <rect x="4" y="8" width="56" height="48" rx="10" fill="none" stroke="var(--accent)" stroke-width="3.5"/>
+          <g fill="var(--accent)">
+            <rect x="12" y="30" width="28" height="14" rx="7"/>
+            <polygon points="32,32 36,17 43,17 40,34"/>
+            <polygon points="36,16 49,12 53,18 48,23 38,22"/>
+            <polygon points="39,12 41,6 44,13"/>
+            <polygon points="34,18 30,20 34,22"/>
+            <polygon points="33,23 29,25 33,27"/>
+            <polygon points="12,31 6,35 8,40 13,37"/>
+            <rect x="15" y="44" width="3.5" height="12" rx="1.2"/>
+            <rect x="21" y="44" width="3.5" height="12" rx="1.2"/>
+            <rect x="28" y="44" width="3.5" height="12" rx="1.2"/>
+            <rect x="34" y="44" width="3.5" height="12" rx="1.2"/>
+            <circle cx="48" cy="17" r="1.5" fill="var(--surface)"/>
+          </g>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1 class="wordmark"><em>말</em>박스</h1>
+        <p class="tagline">Horse box</p>
+      </div>
     </div>
-    <div class="topbar-side">
+    <div class="topbar-row-actions">
       <span class="count" id="count">0개</span>
       <div class="backup-actions">
         <button type="button" class="icon-btn" id="exportBtn" aria-label="메모를 코드로 복사하기">
