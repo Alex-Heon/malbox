@@ -1,3 +1,8 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>말박스</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -121,8 +126,8 @@
 
   .logo-mark {
     flex-shrink: 0;
-    width: 58px;
-    height: 58px;
+    width: 72px;
+    height: 72px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -703,6 +708,8 @@
     .truck-lane { display: none; }
   }
 </style>
+</head>
+<body>
 
 <div class="app">
   <header class="topbar">
@@ -845,6 +852,10 @@
 
   var TINTS = ['', 'var(--tint-teal)', 'var(--tint-amber)', 'var(--tint-blue)', 'var(--tint-rose)', 'var(--tint-violet)'];
   var SIZES = [58, 78, 98];
+
+  function randomTint() {
+    return 1 + Math.floor(Math.random() * (TINTS.length - 1));
+  }
 
   function loadBoxes() {
     try {
@@ -1033,7 +1044,7 @@
       sizeBtn: tools.querySelector('.tool-size'),
       checkBtn: tools.querySelector('.tool-check'),
       swatch: tools.querySelector('.swatch'),
-      tint: opts.tint || 0,
+      tint: (typeof opts.tint === 'number') ? opts.tint : randomTint(),
       size: opts.size || 0
     };
 
@@ -1392,3 +1403,5 @@
   }
 })();
 </script>
+</body>
+</html>
