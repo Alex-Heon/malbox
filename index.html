@@ -290,9 +290,25 @@
     gap: 8px;
   }
 
+  .box-row[hidden] {
+    display: none;
+  }
+
   .box-row.removing {
     animation: dismiss 0.28s ease forwards;
     pointer-events: none;
+  }
+
+  .box-row.is-child {
+    margin-left: 30px;
+  }
+
+  .box-row.is-child .box {
+    border-left: 4px solid var(--accent);
+  }
+
+  .box-row.is-child .tool-add {
+    display: none;
   }
 
   .box {
@@ -367,6 +383,33 @@
     background: var(--surface);
   }
 
+  .tool-add {
+    width: 64px;
+    height: 64px;
+    font-size: 32px;
+    align-self: center;
+  }
+
+  .tool-toggle {
+    width: 64px;
+    height: 64px;
+    align-self: center;
+  }
+
+  .tool-toggle[hidden] {
+    display: none;
+  }
+
+  .tool-toggle .toggle-icon {
+    width: 30px;
+    height: 30px;
+    transition: transform 0.2s ease;
+  }
+
+  .tool-toggle.collapsed .toggle-icon {
+    transform: rotate(-90deg);
+  }
+
   .tool-check {
     display: none;
   }
@@ -378,7 +421,9 @@
   }
 
   .box-row.selecting .tool-color,
-  .box-row.selecting .tool-size {
+  .box-row.selecting .tool-size,
+  .box-row.selecting .tool-add,
+  .box-row.selecting .tool-toggle {
     display: none;
   }
 
@@ -419,6 +464,8 @@
   .box .box-text {
     position: relative;
     z-index: 1;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
   }
 
   .box.sealing {
@@ -842,6 +889,8 @@
   var nextId = 1;
   var selectionMode = false;
   var selectedIds = new Set();
+  var pendingParentId = null;
+  var startAddChildRecognition = null;
 
   var TINTS = ['', 'var(--tint-teal)', 'var(--tint-amber)', 'var(--tint-blue)', 'var(--tint-rose)', 'var(--tint-violet)'];
   var SIZES = [58, 78, 98];
@@ -865,7 +914,7 @@
   function saveBoxes() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(boxes.map(function (b) {
-        return { id: b.id, text: b.text, tint: b.tint, size: b.size };
+        return { id: b.id, text: b.text, tint: b.tint, size: b.size, parentId: b.parentId, collapsed: !!b.collapsed };
       })));
     } catch (e) {
       /* ignore persistence failures */
@@ -918,9 +967,35 @@
     box.textEl.style.fontSize = SIZES[box.size] + 'px';
   }
 
+  function getChildren(parentId) {
+    return boxes.filter(function (b) { return b.parentId === parentId; });
+  }
+
+  function familyInsertIndex(parentId) {
+    if (parentId == null) return boxes.length;
+    var parentIdx = boxes.findIndex(function (b) { return b.id === parentId; });
+    if (parentIdx === -1) return boxes.length;
+    var idx = parentIdx + 1;
+    while (idx < boxes.length && boxes[idx].parentId === parentId) idx++;
+    return idx;
+  }
+
+  function updateToggleVisibility(box) {
+    var has = getChildren(box.id).length > 0;
+    box.toggleBtn.hidden = !has;
+  }
+
+  function updateChildrenVisibility(box) {
+    var collapsed = !!box.collapsed;
+    getChildren(box.id).forEach(function (child) {
+      child.row.hidden = collapsed;
+    });
+    box.toggleBtn.classList.toggle('collapsed', collapsed);
+  }
+
   function attachBoxTools(box) {
     function stop(e) { e.stopPropagation(); }
-    [box.colorBtn, box.sizeBtn, box.checkBtn].forEach(function (btn) {
+    [box.colorBtn, box.sizeBtn, box.addBtn, box.toggleBtn, box.checkBtn].forEach(function (btn) {
       btn.addEventListener('pointerdown', stop);
       btn.addEventListener('pointerup', stop);
       btn.addEventListener('pointercancel', stop);
@@ -937,6 +1012,30 @@
       e.stopPropagation();
       box.size = (box.size + 1) % SIZES.length;
       applySize(box);
+      saveBoxes();
+    });
+
+    box.addBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (startAddChildRecognition) {
+        startAddChildRecognition(box);
+        return;
+      }
+      var childText = window.prompt('아래에 새 박스로 추가할 내용을 입력하세요');
+      if (childText === null) return;
+      childText = childText.trim();
+      if (!childText) return;
+      addBox(childText, { dropIn: !REDUCED_MOTION, parentId: box.id });
+      box.collapsed = false;
+      updateToggleVisibility(box);
+      updateChildrenVisibility(box);
+      saveBoxes();
+    });
+
+    box.toggleBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      box.collapsed = !box.collapsed;
+      updateChildrenVisibility(box);
       saveBoxes();
     });
 
@@ -994,9 +1093,10 @@
     if (!text) return;
     opts = opts || {};
 
-    var id = nextId++;
+    var id = (typeof opts.id === 'number') ? opts.id : nextId++;
+    var parentId = (typeof opts.parentId === 'number') ? opts.parentId : null;
     var row = document.createElement('div');
-    row.className = 'box-row';
+    row.className = 'box-row' + (parentId != null ? ' is-child' : '');
 
     var el = document.createElement('div');
     el.className = 'box';
@@ -1021,11 +1121,19 @@
     tools.innerHTML =
       '<button type="button" class="tool-btn tool-color" aria-label="박스 색 바꾸기"><span class="swatch"></span></button>' +
       '<button type="button" class="tool-btn tool-size" aria-label="글자 크기 바꾸기">A+</button>' +
+      '<button type="button" class="tool-btn tool-toggle" aria-label="하위 박스 접기/펼치기" hidden><svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>' +
+      '<button type="button" class="tool-btn tool-add" aria-label="하위 박스 추가하기">+</button>' +
       '<button type="button" class="tool-btn tool-check" aria-label="선택하기"><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5 11-11"></path></svg></button>';
 
     row.appendChild(el);
     row.appendChild(tools);
-    stageScroll.appendChild(row);
+
+    var insertIdx = familyInsertIndex(parentId);
+    if (insertIdx >= boxes.length) {
+      stageScroll.appendChild(row);
+    } else {
+      stageScroll.insertBefore(row, boxes[insertIdx].row);
+    }
 
     var box = {
       id: id,
@@ -1035,10 +1143,14 @@
       textEl: span,
       colorBtn: tools.querySelector('.tool-color'),
       sizeBtn: tools.querySelector('.tool-size'),
+      toggleBtn: tools.querySelector('.tool-toggle'),
+      addBtn: tools.querySelector('.tool-add'),
       checkBtn: tools.querySelector('.tool-check'),
       swatch: tools.querySelector('.swatch'),
       tint: (typeof opts.tint === 'number') ? opts.tint : randomTint(),
-      size: opts.size || 0
+      size: opts.size || 0,
+      parentId: parentId,
+      collapsed: !!opts.collapsed
     };
 
     applyTint(box);
@@ -1050,7 +1162,7 @@
       e.stopPropagation();
       toggleSelect(box);
     });
-    boxes.push(box);
+    boxes.splice(insertIdx, 0, box);
     if (selectionMode) {
       selectedIds.add(box.id);
       row.classList.add('selecting');
@@ -1060,7 +1172,11 @@
     updateCount();
     syncEmptyState();
     if (opts.persist !== false) saveBoxes();
-    stageScroll.scrollTop = stageScroll.scrollHeight;
+    if (parentId == null) {
+      stageScroll.scrollTop = stageScroll.scrollHeight;
+    } else {
+      row.scrollIntoView({ block: 'nearest' });
+    }
   }
 
   var REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1070,23 +1186,36 @@
     var idx = boxes.findIndex(function (b) { return b.id === id; });
     if (idx === -1) return;
     var entry = boxes[idx];
-    boxes.splice(idx, 1);
-    selectedIds.delete(id);
+    var group = [entry].concat(getChildren(id));
+    var groupIds = group.map(function (b) { return b.id; });
+    boxes = boxes.filter(function (b) { return groupIds.indexOf(b.id) === -1; });
+    groupIds.forEach(function (gid) { selectedIds.delete(gid); });
     saveBoxes();
     updateCount();
     if (navigator.vibrate) { try { navigator.vibrate([12, 40, 12]); } catch (e) {} }
 
-    entry.el.classList.remove('holding');
-    entry.el.classList.add('sealing');
+    group.forEach(function (b) {
+      b.el.classList.remove('holding');
+      b.el.classList.add('sealing');
+    });
 
     setTimeout(function () {
-      entry.row.classList.add('removing');
-      entry.row.addEventListener('animationend', function (e) {
-        if (e.target !== entry.row) return;
-        if (entry.row.parentNode) entry.row.parentNode.removeChild(entry.row);
-        syncEmptyState();
+      var remaining = group.length;
+      group.forEach(function (b) {
+        b.row.classList.add('removing');
+        b.row.addEventListener('animationend', function (e) {
+          if (e.target !== b.row) return;
+          if (b.row.parentNode) b.row.parentNode.removeChild(b.row);
+          remaining--;
+          if (remaining === 0) syncEmptyState();
+        });
       });
     }, SEAL_MS);
+
+    if (entry.parentId != null) {
+      var parent = boxes.find(function (b) { return b.id === entry.parentId; });
+      if (parent) updateToggleVisibility(parent);
+    }
   }
 
   var CODE_PREFIX = 'MALBOX1:';
@@ -1131,8 +1260,15 @@
   }
 
   function buildExportCode(list) {
-    var payload = (list || boxes).map(function (b) {
-      return { t: b.text, c: b.tint, s: b.size };
+    var chosen = list || boxes;
+    var indexById = {};
+    chosen.forEach(function (b, i) { indexById[b.id] = i; });
+    var payload = chosen.map(function (b) {
+      var item = { t: b.text, c: b.tint, s: b.size };
+      if (b.parentId != null && indexById.hasOwnProperty(b.parentId)) {
+        item.p = indexById[b.parentId];
+      }
+      return item;
     });
     return CODE_PREFIX + encodeUnicode(JSON.stringify(payload));
   }
@@ -1245,6 +1381,7 @@
     }
 
     function finishImport() {
+      boxes.forEach(function (b) { updateToggleVisibility(b); });
       updateCount();
       syncEmptyState();
       saveBoxes();
@@ -1255,9 +1392,12 @@
     var leadMs = REDUCED_MOTION ? 0 : TRUCK_LEAD_MS;
     var stepMs = REDUCED_MOTION ? 0 : DROP_STEP_MS;
 
+    var newIds = [];
     items.forEach(function (item, i) {
       setTimeout(function () {
-        addBox(item.t, { dropIn: !REDUCED_MOTION, persist: false, tint: item.c || 0, size: item.s || 0 });
+        var parentId = (typeof item.p === 'number' && newIds[item.p] != null) ? newIds[item.p] : null;
+        addBox(item.t, { dropIn: !REDUCED_MOTION, persist: false, tint: item.c || 0, size: item.s || 0, parentId: parentId });
+        newIds[i] = nextId - 1;
         if (i === items.length - 1) finishImport();
       }, leadMs + i * stepMs);
     });
@@ -1268,7 +1408,19 @@
 
   loadBoxes().forEach(function (b) {
     nextId = Math.max(nextId, b.id + 1);
-    addBox(b.text, { noAnimate: true, persist: false, tint: b.tint || 0, size: b.size || 0 });
+    addBox(b.text, {
+      id: b.id,
+      noAnimate: true,
+      persist: false,
+      tint: b.tint || 0,
+      size: b.size || 0,
+      parentId: (typeof b.parentId === 'number') ? b.parentId : null,
+      collapsed: !!b.collapsed
+    });
+  });
+  boxes.forEach(function (b) {
+    updateToggleVisibility(b);
+    if (b.collapsed) updateChildrenVisibility(b);
   });
 
   var SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1298,6 +1450,7 @@
 
     function stopListening(message) {
       isListening = false;
+      pendingParentId = null;
       clearTimeout(restartTimer);
       clearTimeout(autoOffTimer);
       setListeningUI(false);
@@ -1323,6 +1476,45 @@
       });
     }
 
+    function beginListening(readyMessage) {
+      isListening = true;
+      quickEndCount = 0;
+      micBtn.classList.add('listening');
+      status.textContent = '마이크 확인 중...';
+      ensureMicAccess().then(function () {
+        if (!isListening) return;
+        setListeningUI(true);
+        if (readyMessage) status.textContent = readyMessage;
+        startRecognition();
+        clearTimeout(autoOffTimer);
+        autoOffTimer = setTimeout(function () {
+          stopListening('시간이 지나 마이크가 꺼졌어요');
+        }, AUTO_OFF_MS);
+      }).catch(function (err) {
+        isListening = false;
+        pendingParentId = null;
+        setListeningUI(false);
+        var reason = err && err.name ? err.name : '';
+        if (reason === 'NotFoundError') {
+          status.textContent = '마이크를 찾을 수 없어요';
+        } else if (reason === 'SecurityError') {
+          status.textContent = '이 화면에서는 마이크를 쓸 수 없어요 (새 탭에서 열어보세요)';
+        } else {
+          status.textContent = '마이크 접근이 차단됐어요 (설정에서 확인해주세요)';
+        }
+      });
+    }
+
+    startAddChildRecognition = function (box) {
+      clearTimeout(restartTimer);
+      pendingParentId = box.id;
+      if (isListening) {
+        status.textContent = '말하면 하위 박스로 추가돼요';
+        return;
+      }
+      beginListening('말하면 하위 박스로 추가돼요');
+    };
+
     recognition.onresult = function (event) {
       var interimText = '';
       var finalText = '';
@@ -1335,8 +1527,25 @@
         }
       }
       if (finalText.trim()) {
-        addBox(finalText);
-        interim.textContent = '';
+        if (pendingParentId != null) {
+          var parentId = pendingParentId;
+          pendingParentId = null;
+          var parentBox = boxes.find(function (b) { return b.id === parentId; });
+          if (parentBox) {
+            addBox(finalText, { parentId: parentBox.id, dropIn: !REDUCED_MOTION });
+            parentBox.collapsed = false;
+            updateToggleVisibility(parentBox);
+            updateChildrenVisibility(parentBox);
+            saveBoxes();
+          } else {
+            addBox(finalText);
+          }
+          interim.textContent = '';
+          stopListening('하위 박스로 추가했어요');
+        } else {
+          addBox(finalText);
+          interim.textContent = '';
+        }
       } else {
         interim.textContent = interimText;
       }
@@ -1365,30 +1574,7 @@
     micBtn.addEventListener('click', function () {
       clearTimeout(restartTimer);
       if (!isListening) {
-        isListening = true;
-        quickEndCount = 0;
-        micBtn.classList.add('listening');
-        status.textContent = '마이크 확인 중...';
-        ensureMicAccess().then(function () {
-          if (!isListening) return;
-          setListeningUI(true);
-          startRecognition();
-          clearTimeout(autoOffTimer);
-          autoOffTimer = setTimeout(function () {
-            stopListening('시간이 지나 마이크가 꺼졌어요');
-          }, AUTO_OFF_MS);
-        }).catch(function (err) {
-          isListening = false;
-          setListeningUI(false);
-          var reason = err && err.name ? err.name : '';
-          if (reason === 'NotFoundError') {
-            status.textContent = '마이크를 찾을 수 없어요';
-          } else if (reason === 'SecurityError') {
-            status.textContent = '이 화면에서는 마이크를 쓸 수 없어요 (새 탭에서 열어보세요)';
-          } else {
-            status.textContent = '마이크 접근이 차단됐어요 (설정에서 확인해주세요)';
-          }
-        });
+        beginListening();
       } else {
         stopListening();
       }
